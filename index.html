@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Court Diary">
+<meta name="application-name" content="Court Diary">
+<meta name="theme-color" content="#1a1f2e">
+<title>Court Diary</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#1a1f2e}
+body{font-family:Georgia,'Times New Roman',serif;color:#1a1f2e}
+
+:root{
+  --ink:#1a1f2e;--parchment:#f8f4ee;--gold:#b8973a;--gold2:#d4af60;
+  --red:#8b1a1a;--green:#4a6741;--steel:#3d5166;--mist:#e8e2d9;
+}
+
+.screen{display:none;height:100dvh;height:100svh;flex-direction:column;background:var(--parchment);max-width:500px;margin:0 auto}
+.screen.on{display:flex}
+
+/* TOPBAR */
+.topbar{background:var(--ink);padding:13px 16px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--gold);flex-shrink:0}
+.tb-title{font-size:17px;color:var(--gold2);font-weight:700;letter-spacing:.03em}
+.tb-sub{font-size:10px;color:#7a8599;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.ib{background:none;border:none;cursor:pointer;color:var(--gold2);font-size:20px;padding:4px 6px;line-height:1}
+
+/* MONTH NAV */
+.mnav{background:#242b3d;display:flex;align-items:center;justify-content:space-between;padding:7px 16px;flex-shrink:0}
+.mlabel{font-size:14px;color:#f0ece5}
+.mnav button{background:none;border:none;color:var(--gold2);font-size:20px;cursor:pointer;padding:4px 10px}
+
+/* STRIP */
+.strip{background:#242b3d;display:flex;overflow-x:auto;padding:6px 10px 8px;gap:5px;flex-shrink:0;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;width:43px;height:54px;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:1.5px solid transparent;transition:background .15s}
+.chip.sel{background:var(--gold);border-color:var(--gold2)}
+.chip .dn{font-size:9px;letter-spacing:.1em;color:#7a8599;text-transform:uppercase}
+.chip .dd{font-size:17px;color:#f0ece5;line-height:1}
+.chip.sel .dn,.chip.sel .dd{color:var(--ink)}
+.chip.tod .dd{color:var(--gold2)}
+.chip.sel.tod .dd{color:var(--ink)}
+.chip .dot{width:4px;height:4px;border-radius:50%;background:var(--gold);opacity:0}
+.chip.hc .dot{opacity:1}
+.chip.sel .dot{background:var(--ink);opacity:1}
+
+/* DATE HEAD */
+.dhead{padding:11px 15px 8px;border-bottom:1px solid var(--mist);flex-shrink:0;display:flex;align-items:baseline;justify-content:space-between}
+.dhead-title{font-size:16px;color:var(--ink)}
+.dhead-sub{font-size:11px;color:#999;font-style:italic}
+
+/* CASE LIST */
+.clist{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:9px}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#bbb}
+.empty .eg{font-size:40px;opacity:.3}
+.empty p{font-style:italic;font-size:13px}
+
+/* CASE CARD */
+.card{background:#fff;border-radius:11px;padding:13px 14px;box-shadow:0 2px 8px rgba(26,31,46,.1);cursor:pointer;border-left:4px solid var(--steel)}
+.card.urgent{border-left-color:var(--red)}
+.card.done{border-left-color:var(--green)}
+.card.pending{border-left-color:var(--gold)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.card-title{font-size:14px;color:var(--ink);line-height:1.35;flex:1;margin-right:7px}
+.badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:20px;flex-shrink:0}
+.badge.scheduled{background:#e8eef5;color:var(--steel)}
+.badge.pending{background:#fdf4e0;color:#7a5500}
+.badge.urgent{background:#fdeaea;color:var(--red)}
+.badge.done{background:#e8f2e8;color:var(--green)}
+.card-meta{display:flex;flex-wrap:wrap;gap:7px;font-size:11px;color:#666}
+.card-notes{font-size:11px;color:#666;margin-top:7px;font-style:italic;border-top:1px solid #f0f0f0;padding-top:6px;line-height:1.5}
+
+/* FAB */
+.fab{position:fixed;bottom:22px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--gold);border:none;cursor:pointer;font-size:28px;color:var(--ink);box-shadow:0 4px 16px rgba(184,151,58,.5);display:flex;align-items:center;justify-content:center;z-index:40;line-height:1}
+.fab:active{transform:scale(.92)}
+
+/* FORM */
+.fscroll{flex:1;overflow-y:auto;padding:14px 15px 4px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:4px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid #d8d0c4;border-radius:8px;background:#fff;font-family:Georgia,serif;font-size:14px;color:var(--ink);outline:none}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
+.fg textarea{resize:none;height:70px}
+.frow{display:flex;gap:8px}
+.frow .fg{flex:1}
+.btn-save{width:100%;padding:13px;background:var(--ink);color:var(--gold2);border:none;border-radius:9px;font-family:Georgia,serif;font-size:15px;cursor:pointer;letter-spacing:.05em}
+.btn-cancel{width:100%;padding:11px;background:none;border:none;color:#999;font-size:13px;cursor:pointer;margin-top:4px}
+.btn-del{width:100%;padding:11px;background:none;border:1.5px solid var(--red);border-radius:9px;color:var(--red);font-size:13px;cursor:pointer}
+
+/* DETAIL */
+.det-body{flex:1;overflow-y:auto;padding:18px 16px}
+.det-title{font-size:20px;color:var(--ink);margin-bottom:8px}
+.det-row{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid #ece7df;font-size:13px}
+.det-lbl{color:#999;width:80px;flex-shrink:0;font-size:11px;text-transform:uppercase;letter-spacing:.07em;padding-top:1px}
+.det-btns{padding:10px 16px 28px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.det-notes{margin-top:14px}
+.det-notes h3{font-size:14px;color:var(--ink);margin-bottom:6px}
+.det-notes p{font-style:italic;font-size:13px;color:#555;line-height:1.6}
+
+/* OVERLAY */
+.ov{display:none;position:fixed;inset:0;background:rgba(10,12,20,.6);z-index:100;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.ov-box{background:var(--parchment);border-radius:14px;padding:22px 20px;width:100%;max-width:360px}
+.ov-title{font-size:17px;color:var(--ink);margin-bottom:12px}
+.sr-input{width:100%;padding:10px 12px;border:1.5px solid #d8d0c4;border-radius:8px;background:#fff;font-family:Georgia,serif;font-size:14px;color:var(--ink);outline:none;margin-bottom:10px;box-sizing:border-box}
+.sr-list{max-height:52svh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+
+/* INSTALL BANNER */
+.install-bar{background:#242b3d;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px}
+.install-bar p{font-size:11px;color:#aab;line-height:1.4;flex:1}
+.install-bar button{background:var(--gold);border:none;border-radius:7px;padding:7px 12px;font-size:12px;color:var(--ink);cursor:pointer;white-space:nowrap;font-weight:700}
+.install-bar .xi{background:none;border:none;color:#666;font-size:16px;cursor:pointer;padding:2px 4px}
+</style>
+</head>
+<body>
+
+<!-- DIARY -->
+<div id="S_diary" class="screen on">
+  <div class="topbar">
+    <div><div class="tb-title">⚖ Court Diary</div><div class="tb-sub">Personal Case Calendar</div></div>
+    <button class="ib" onclick="openSearch()">🔍</button>
+  </div>
+  <div id="installBar" class="install-bar" style="display:none">
+    <p id="installMsg">Add to your home screen to use like an app — works offline!</p>
+    <button id="installBtn" onclick="doInstall()">Install</button>
+    <button class="xi" onclick="document.getElementById('installBar').style.display='none'">✕</button>
+  </div>
+  <div class="mnav">
+    <button onclick="chMonth(-1)">‹</button>
+    <span class="mlabel" id="mLabel"></span>
+    <button onclick="chMonth(1)">›</button>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="dhead">
+    <span class="dhead-title" id="dTitle"></span>
+    <span class="dhead-sub" id="dSub"></span>
+  </div>
+  <div class="clist" id="cList"></div>
+  <button class="fab" onclick="openForm(null)">+</button>
+</div>
+
+<!-- DETAIL -->
+<div id="S_detail" class="screen">
+  <div class="topbar">
+    <div><div class="tb-title">Case Details</div></div>
+    <button class="ib" onclick="show('diary')">✕</button>
+  </div>
+  <div class="det-body" id="detBody"></div>
+  <div class="det-btns">
+    <button class="btn-save" onclick="editFromDetail()">✏ Edit Case</button>
+    <button class="btn-del" onclick="confirmDel()">Delete Case</button>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="S_form" class="screen">
+  <div class="topbar">
+    <div><div class="tb-title" id="formTitle">Add New Case</div></div>
+    <button class="ib" onclick="cancelForm()">✕</button>
+  </div>
+  <div class="fscroll">
+    <div class="fg"><label>Case Title / Parties *</label><input id="f_title" placeholder="e.g. Smith v. Jones"></div>
+    <div class="frow">
+      <div class="fg"><label>Date *</label><input type="date" id="f_date"></div>
+      <div class="fg"><label>Time</label><input type="time" id="f_time"></div>
+    </div>
+    <div class="fg"><label>Court / Venue</label><input id="f_court" placeholder="e.g. High Court, Room 3"></div>
+    <div class="frow">
+      <div class="fg"><label>Case Number</label><input id="f_num" placeholder="Optional"></div>
+      <div class="fg"><label>Status</label>
+        <select id="f_status">
+          <option value="scheduled">Scheduled</option>
+          <option value="pending">Pending</option>
+          <option value="urgent">Urgent</option>
+          <option value="done">Concluded</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>My Role</label><input id="f_role" placeholder="e.g. Counsel for Claimant"></div>
+    <div class="fg"><label>Notes / Hearing Type</label><textarea id="f_notes" placeholder="e.g. Injunction hearing, bring all documents…"></textarea></div>
+    <button class="btn-save" onclick="saveForm()">Save to Diary</button>
+    <button class="btn-cancel" onclick="cancelForm()">Cancel</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- SEARCH OVERLAY -->
+<div class="ov" id="OV_search" onclick="if(event.target===this)closeSearch()">
+  <div class="ov-box">
+    <div class="ov-title">🔍 Search Cases</div>
+    <input class="sr-input" id="srInput" placeholder="Title, court, number, notes…" oninput="runSearch()">
+    <div class="sr-list" id="srList"></div>
+    <button class="btn-cancel" onclick="closeSearch()">Close</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE OVERLAY -->
+<div class="ov" id="OV_del" onclick="if(event.target===this)closeDelOv()">
+  <div class="ov-box">
+    <div class="ov-title">Delete this case?</div>
+    <p style="font-size:13px;color:#666;margin-bottom:16px">This cannot be undone.</p>
+    <button class="btn-del" style="margin-bottom:8px" onclick="doDelete()">Yes, Delete</button>
+    <button class="btn-cancel" onclick="closeDelOv()">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const KEY = 'courtDiary_v3';
+function loadCases(){ try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]} }
+function saveCases(c){ localStorage.setItem(KEY,JSON.stringify(c)) }
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5) }
+
+// ── STATE ──
+const MN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DN = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const SL = {scheduled:'Scheduled',pending:'Pending',urgent:'Urgent',done:'Concluded'};
+let today, selDate, curY, curM, editId=null, detId=null;
+
+function init(){
+  const d = new Date();
+  today = ds(d); selDate = today; curY = d.getFullYear(); curM = d.getMonth();
+  render(); renderList();
+}
+
+function ds(d){ return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()) }
+function p2(n){ return String(n).padStart(2,'0') }
+function pd(s){ const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d) }
+function fmtDate(s){ try{return pd(s).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}catch{return s} }
+function esc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+function chMonth(d){
+  curM+=d;
+  if(curM>11){curM=0;curY++} if(curM<0){curM=11;curY--}
+  render();
+}
+
+function render(){
+  document.getElementById('mLabel').textContent = MN[curM]+' '+curY;
+  const strip = document.getElementById('strip');
+  strip.innerHTML='';
+  const cases = loadCases();
+  const cdates = new Set(cases.map(c=>c.date));
+  const dim = new Date(curY,curM+1,0).getDate();
+  for(let i=1;i<=dim;i++){
+    const dstr = curY+'-'+p2(curM+1)+'-'+p2(i);
+    const dow = new Date(curY,curM,i).getDay();
+    const chip = document.createElement('div');
+    const cls = ['chip',
+      dstr===selDate?'sel':'',
+      dstr===today?'tod':'',
+      cdates.has(dstr)?'hc':''
+    ].filter(Boolean).join(' ');
+    chip.className=cls;
+    chip.dataset.date=dstr;
+    chip.innerHTML=`<span class="dn">${DN[dow]}</span><span class="dd">${i}</span><div class="dot"></div>`;
+    chip.onclick=()=>selectDate(dstr);
+    strip.appendChild(chip);
+    if(dstr===selDate) setTimeout(()=>chip.scrollIntoView({inline:'center',behavior:'smooth',block:'nearest'}),60);
+  }
+}
+
+function selectDate(d){ selDate=d; render(); renderList(); }
+
+function renderList(){
+  const d = pd(selDate);
+  document.getElementById('dTitle').textContent = fmtDate(selDate);
+  const cases = loadCases().filter(c=>c.date===selDate).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  document.getElementById('dSub').textContent = cases.length ? cases.length+' case'+(cases.length>1?'s':'') : '';
+  const el = document.getElementById('cList');
+  if(!cases.length){
+    el.innerHTML=`<div class="empty"><div class="eg">⚖</div><p>No cases for this day</p></div>`;
+    return;
+  }
+  el.innerHTML = cases.map(c=>`
+    <div class="card ${c.status||'scheduled'}" onclick="openDetail('${c.id}')">
+      <div class="card-top">
+        <div class="card-title">${esc(c.title)}</div>
+        <span class="badge ${c.status||'scheduled'}">${SL[c.status||'scheduled']}</span>
+      </div>
+      <div class="card-meta">
+        ${c.time?`<span>🕐 ${esc(c.time)}</span>`:''}
+        ${c.court?`<span>🏛 ${esc(c.court)}</span>`:''}
+        ${c.number?`<span>📋 ${esc(c.number)}</span>`:''}
+        ${c.role?`<span>👤 ${esc(c.role)}</span>`:''}
+      </div>
+      ${c.notes?`<div class="card-notes">${esc(c.notes)}</div>`:''}
+    </div>`).join('');
+}
+
+// ── DETAIL ──
+function openDetail(id){
+  detId=id;
+  const c=loadCases().find(x=>x.id===id); if(!c)return;
+  const SC={scheduled:'#e8eef5',pending:'#fdf4e0',urgent:'#fdeaea',done:'#e8f2e8'};
+  const TC={scheduled:'#3d5166',pending:'#7a5500',urgent:'#8b1a1a',done:'#4a6741'};
+  document.getElementById('detBody').innerHTML=`
+    <div class="det-title">${esc(c.title)}</div>
+    <div style="margin-bottom:14px"><span class="badge ${c.status||'scheduled'}" style="font-size:10px;padding:3px 10px">${SL[c.status||'scheduled']}</span></div>
+    <div class="det-row"><span class="det-lbl">Date</span><span>${fmtDate(c.date)}</span></div>
+    ${c.time?`<div class="det-row"><span class="det-lbl">Time</span><span>🕐 ${esc(c.time)}</span></div>`:''}
+    ${c.court?`<div class="det-row"><span class="det-lbl">Court</span><span>🏛 ${esc(c.court)}</span></div>`:''}
+    ${c.number?`<div class="det-row"><span class="det-lbl">Case No.</span><span>${esc(c.number)}</span></div>`:''}
+    ${c.role?`<div class="det-row"><span class="det-lbl">My Role</span><span>${esc(c.role)}</span></div>`:''}
+    ${c.notes?`<div class="det-notes"><h3>Notes</h3><p>${esc(c.notes)}</p></div>`:''}
+  `;
+  show('detail');
+}
+
+function editFromDetail(){
+  const c=loadCases().find(x=>x.id===detId); if(!c)return;
+  openForm(c);
+}
+
+function confirmDel(){ document.getElementById('OV_del').classList.add('on') }
+function closeDelOv(){ document.getElementById('OV_del').classList.remove('on') }
+function doDelete(){
+  saveCases(loadCases().filter(c=>c.id!==detId));
+  closeDelOv(); show('diary'); render(); renderList();
+}
+
+// ── FORM ──
+function openForm(c){
+  editId = c?c.id:null;
+  document.getElementById('formTitle').textContent = c?'Edit Case':'Add New Case';
+  document.getElementById('f_title').value = c?c.title||'':'';
+  document.getElementById('f_date').value = c?c.date||selDate:selDate;
+  document.getElementById('f_time').value = c?c.time||'':'';
+  document.getElementById('f_court').value = c?c.court||'':'';
+  document.getElementById('f_num').value = c?c.number||'':'';
+  document.getElementById('f_status').value = c?c.status||'scheduled':'scheduled';
+  document.getElementById('f_role').value = c?c.role||'':'';
+  document.getElementById('f_notes').value = c?c.notes||'':'';
+  show('form');
+}
+
+function cancelForm(){ show(editId?'detail':'diary') }
+
+function saveForm(){
+  const title=document.getElementById('f_title').value.trim();
+  const date=document.getElementById('f_date').value;
+  if(!title){alert('Please enter a case title.');return}
+  if(!date){alert('Please select a date.');return}
+  const nc={
+    id:editId||genId(), title, date,
+    time:document.getElementById('f_time').value,
+    court:document.getElementById('f_court').value.trim(),
+    number:document.getElementById('f_num').value.trim(),
+    status:document.getElementById('f_status').value,
+    role:document.getElementById('f_role').value.trim(),
+    notes:document.getElementById('f_notes').value.trim()
+  };
+  let cases=loadCases();
+  if(editId){ cases=cases.map(c=>c.id===editId?nc:c); }
+  else{ cases.push(nc); }
+  saveCases(cases);
+  const[y,m]=date.split('-').map(Number);
+  curY=y; curM=m-1; selDate=date;
+  render(); renderList();
+  if(editId){ openDetail(detId); } else { show('diary'); }
+}
+
+// ── SEARCH ──
+function openSearch(){ document.getElementById('srInput').value=''; document.getElementById('srList').innerHTML=''; document.getElementById('OV_search').classList.add('on'); setTimeout(()=>document.getElementById('srInput').focus(),200) }
+function closeSearch(){ document.getElementById('OV_search').classList.remove('on') }
+function runSearch(){
+  const q=document.getElementById('srInput').value.toLowerCase().trim();
+  const res=document.getElementById('srList');
+  if(!q){res.innerHTML='';return}
+  const found=loadCases().filter(c=>[c.title,c.court,c.number,c.notes,c.role].join(' ').toLowerCase().includes(q));
+  if(!found.length){res.innerHTML='<p style="color:#aaa;font-style:italic;font-size:13px;padding:6px 0">No cases found.</p>';return}
+  res.innerHTML=found.map(c=>`
+    <div class="card ${c.status||'scheduled'}" style="box-shadow:none" onclick="srSelect('${c.id}','${c.date}')">
+      <div class="card-top"><div class="card-title">${esc(c.title)}</div><span class="badge ${c.status||'scheduled'}">${SL[c.status||'scheduled']}</span></div>
+      <div class="card-meta"><span>📅 ${esc(c.date)}</span>${c.court?`<span>🏛 ${esc(c.court)}</span>`:''}</div>
+    </div>`).join('');
+}
+function srSelect(id,date){
+  const[y,m]=date.split('-').map(Number);
+  curY=y;curM=m-1;selDate=date;
+  closeSearch();render();renderList();
+  setTimeout(()=>openDetail(id),80);
+}
+
+// ── SCREEN ──
+function show(s){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));
+  document.getElementById('S_'+s).classList.add('on');
+  if(s==='diary'){render();renderList();}
+}
+
+// ── PWA INSTALL ──
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  showInstallBar();
+});
+function showInstallBar(){
+  const bar=document.getElementById('installBar');
+  bar.style.display='flex';
+}
+async function doInstall(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const{outcome}=await deferredPrompt.userChoice;
+    deferredPrompt=null;
+    document.getElementById('installBar').style.display='none';
+  }
+}
+window.addEventListener('appinstalled',()=>{ document.getElementById('installBar').style.display='none'; });
+
+// Show iOS instructions if on iOS Safari
+function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream }
+function isInStandaloneMode(){ return window.navigator.standalone===true || window.matchMedia('(display-mode: standalone)').matches }
+window.addEventListener('load',()=>{
+  if(isIOS() && !isInStandaloneMode()){
+    document.getElementById('installMsg').textContent='📱 Tap the Share button (□↑) then "Add to Home Screen" to install this app.';
+    document.getElementById('installBtn').style.display='none';
+    document.getElementById('installBar').style.display='flex';
+  }
+});
+
+// ── SERVICE WORKER (inline via blob) ──
+// Caches this page so it works fully offline after first load
+const swCode = `
+const CACHE='court-diary-v1';
+const FILES=['/'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    const rc=res.clone();
+    caches.open(CACHE).then(c=>c.put(e.request,rc));
+    return res;
+  }).catch(()=>caches.match('/'))));
+});
+`;
+
+// Register SW
+if('serviceWorker' in navigator){
+  // Try registering SW from same origin if hosted
+  navigator.serviceWorker.register('/sw.js').catch(()=>{
+    // Fallback: inline blob SW for local use
+    try{
+      const blob=new Blob([swCode],{type:'application/javascript'});
+      const url=URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url);
+    }catch(e){}
+  });
+}
+
+// ── WEB APP MANIFEST (injected dynamically) ──
+const manifest = {
+  name:'Court Diary',
+  short_name:'Court Diary',
+  description:'Personal court case diary',
+  start_url:'.',
+  display:'standalone',
+  background_color:'#1a1f2e',
+  theme_color:'#1a1f2e',
+  orientation:'portrait',
+  icons:[
+    {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%231a1f2e'/><text y='140' x='50%' text-anchor='middle' font-size='120'>⚖</text></svg>",sizes:'192x192',type:'image/svg+xml'},
+    {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%231a1f2e'/><text y='380' x='50%' text-anchor='middle' font-size='320'>⚖</text></svg>",sizes:'512x512',type:'image/svg+xml'}
+  ]
+};
+const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+const mUrl=URL.createObjectURL(mBlob);
+const mLink=document.createElement('link');
+mLink.rel='manifest'; mLink.href=mUrl;
+document.head.appendChild(mLink);
+
+init();
+</script>
+</body>
+</html>
